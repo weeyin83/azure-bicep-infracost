@@ -1,0 +1,10 @@
+version: 0.1
+projects:
+  - path: ./bicep/main.bicep
+    name: azure-bicep-infracost-demo
+    usage:
+      microsoft.compute.virtualmachines:
+        os: windows
+        monthly_hrs: 730
+      microsoft.operationalinsights.workspaces:
+        monthly_ingested_gb: 1

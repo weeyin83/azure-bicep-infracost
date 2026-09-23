@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "uksouth"
+    },
+    "workloadName": {
+      "value": "finops"
+    },
+    "environmentName": {
+      "value": "demo"
+    },
+    "vmAdminUsername": {
+      "value": "azureadmin"
+    },
+    "vmAdminPassword": {
+      "value": "P@ssw0rd!2026"
+    },
+    "vmSize": {
+      "value": "Standard_D2s_v5"
+    },
+    "vmCount": {
+      "value": 1
+    },
+    "premiumDataDiskSizeGiB": {
+      "value": 128
+    },
+    "bastionSku": {
+      "value": "Standard"
+    },
+    "logAnalyticsRetentionInDays": {
+      "value": 30
+    },
+    "tags": {
+      "value": {
+        "application": "infracost-bicep-demo",
+        "environment": "demo",
+        "workload": "finops",
+        "owner": "cloud-platform",
+        "costCenter": "platform-engineering"
+      }
+    }
+  }
+}

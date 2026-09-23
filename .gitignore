@@ -1,0 +1,12 @@
+# Local build artifacts
+*.json
+!bicep/*.json
+*.log
+.infracost
+infracost.json
+.arm
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db

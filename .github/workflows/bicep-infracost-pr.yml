@@ -1,0 +1,91 @@
+name: Bicep Landing Zone PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'bicep/**'
+      - '.github/workflows/**'
+      - '.infracost.yml'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-and-cost:
+    runs-on: ubuntu-latest
+    env:
+      LOCATION: uksouth
+      WORKLOAD_NAME: finops
+      ENVIRONMENT_NAME: demo
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Bicep
+        uses: azure/setup-bicep@v2
+
+      - name: Validate Bicep syntax
+        run: |
+          bicep build ./bicep/main.bicep
+          bicep build ./bicep/subscription.bicep
+
+      - name: Validate Azure deployment
+        run: |
+          az deployment sub validate \
+            --location "$LOCATION" \
+            --template-file ./bicep/subscription.bicep \
+            --parameters \
+              location="$LOCATION" \
+              workloadName="$WORKLOAD_NAME" \
+              environmentName="$ENVIRONMENT_NAME" \
+              vmAdminUsername="${{ secrets.VM_ADMIN_USERNAME }}" \
+              vmAdminPassword="${{ secrets.VM_ADMIN_PASSWORD }}" \
+              vmSize="Standard_D2s_v5" \
+              vmCount=1 \
+              premiumDataDiskSizeGiB=128 \
+              bastionSku="Standard" \
+              logAnalyticsRetentionInDays=30
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api_key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Run Infracost breakdown
+        run: |
+          infracost breakdown \
+            --path ./bicep/main.bicep \
+            --format json \
+            --out-file infracost.json \
+            --usage-file .infracost.yml \
+            --show-skipped
+
+      - name: Show monthly cost impact
+        run: |
+          infracost output --path infracost.json --format table
+
+      - name: Post PR cost comment
+        run: |
+          infracost comment github \
+            --path infracost.json \
+            --repo ${{ github.repository }} \
+            --github-token ${{ github.token }} \
+            --pull-request ${{ github.event.pull_request.number }} \
+            --behavior update
+        if: github.event_name == 'pull_request'
