@@ -1,6 +1,7 @@
 # Local build artifacts
 *.json
 !bicep/*.json
+!.devcontainer/devcontainer.json
 *.log
 .infracost
 infracost.json
